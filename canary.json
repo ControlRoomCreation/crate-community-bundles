@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "yt_dlp": {
+    "min_version": "2024.01.01",
+    "force_update": false,
+    "extra_args": [],
+    "platform_args": {}
+  },
+  "platforms": {},
+  "app": {
+    "min_supported_version": "1.0.0",
+    "latest_version": "1.0.0",
+    "update_url": "https://controlroomcreative.app/#download",
+    "maintenance_message": null
+  }
+}

@@ -1,0 +1,71 @@
+name: Validate Manifest
+
+on:
+  push:
+    paths: ['manifest.json']
+  pull_request:
+    paths: ['manifest.json']
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON syntax
+        run: python3 -c "import json; json.load(open('manifest.json'))"
+
+      - name: Validate manifest schema
+        run: |
+          python3 << 'EOF'
+          import json, sys
+
+          with open('manifest.json') as f:
+              manifest = json.load(f)
+
+          # Check top-level fields
+          assert 'version' in manifest, "Missing 'version' field"
+          assert 'bundles' in manifest, "Missing 'bundles' field"
+          assert isinstance(manifest['bundles'], list), "'bundles' must be an array"
+
+          required_fields = ['id', 'name', 'description', 'version', 'author',
+                             'tags', 'fileCount', 'totalSizeBytes', 'downloadURL', 'sha256Hash']
+
+          ids_seen = set()
+          for i, bundle in enumerate(manifest['bundles']):
+              for field in required_fields:
+                  assert field in bundle, f"Bundle {i} ('{bundle.get('id', '?')}') missing '{field}'"
+
+              # ID uniqueness
+              assert bundle['id'] not in ids_seen, f"Duplicate bundle ID: {bundle['id']}"
+              ids_seen.add(bundle['id'])
+
+              # Type checks
+              assert isinstance(bundle['tags'], list), f"Bundle '{bundle['id']}': tags must be array"
+              assert isinstance(bundle['fileCount'], int), f"Bundle '{bundle['id']}': fileCount must be int"
+              assert isinstance(bundle['totalSizeBytes'], int), f"Bundle '{bundle['id']}': totalSizeBytes must be int"
+              assert bundle['downloadURL'].startswith('https://'), f"Bundle '{bundle['id']}': downloadURL must be HTTPS"
+              assert len(bundle['sha256Hash']) == 64, f"Bundle '{bundle['id']}': sha256Hash must be 64 hex chars"
+
+          print(f"Manifest valid: {len(manifest['bundles'])} bundle(s)")
+          EOF
+
+      - name: Check download URLs are reachable
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 << 'EOF'
+          import json, urllib.request
+
+          with open('manifest.json') as f:
+              manifest = json.load(f)
+
+          for bundle in manifest['bundles']:
+              url = bundle['downloadURL']
+              try:
+                  req = urllib.request.Request(url, method='HEAD')
+                  resp = urllib.request.urlopen(req, timeout=10)
+                  print(f"  OK  {bundle['id']} -> {resp.status}")
+              except Exception as e:
+                  print(f"  FAIL {bundle['id']} -> {e}")
+                  # Don't fail the build — URL might be behind auth or rate-limited
+          EOF
