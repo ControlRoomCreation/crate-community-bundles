@@ -1,4 +1,20 @@
 {
+  "_comment": [
+    "INERT — nothing reads this file. Kept only so its history survives.",
+    "The live Crate canary is https://controlroomcreative.app/canary.json,",
+    "sourced from Website/canary.json in ControlRoomCreation/crate-workspace.",
+    "That one is Ed25519-signed and the app verifies it against a key embedded",
+    "at App/Resilience/CanaryService.swift (canaryPublicKeyBase64).",
+    "This copy has an empty platforms map, no signature at all, and has never",
+    "been touched since the repo's initial commit 220eeac (2026-04-25) — an",
+    "app that fetched it would reject it outright.",
+    "The only file in this repo the app actually reads is manifest.json",
+    "(App/Constants+Community.swift -> Community.manifestURL).",
+    "Do not edit this to change app behaviour; edit the workspace copy and",
+    "follow Docs/Runbooks/CANARY-RUNBOOK.md. Annotated 2026-08-14 because two",
+    "files named canary.json in one working tree, one live and one dead, is a",
+    "trap for any future audit that greps by filename."
+  ],
   "schema": 1,
   "yt_dlp": {
     "min_version": "2024.01.01",
