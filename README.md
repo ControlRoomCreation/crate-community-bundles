@@ -66,6 +66,29 @@ This repository is moderated by Control Room Creations. Content that violates ou
 
 Repeat infringers are subject to a three-strike policy resulting in permanent account termination.
 
+## Repository contents
+
+| File | Read by | Notes |
+|---|---|---|
+| `manifest.json` | the CRATE app, at `raw.githubusercontent.com/.../main/manifest.json` | The live one. Validated by CI on every PR and every commit that reaches `main`. |
+| `canary.json` | **nothing** | **Inert.** See below. |
+
+### `canary.json` is not the Crate canary
+
+The real remote-control manifest is `https://controlroomcreative.app/canary.json`,
+built from `Website/canary.json` in `ControlRoomCreation/crate-workspace`, and
+it is Ed25519-signed — the app verifies it against a key compiled into
+`App/Resilience/CanaryService.swift`.
+
+The `canary.json` in *this* repo has an empty `platforms` map, no `signature`
+field at all, and has not been touched since the initial commit `220eeac`
+(2026-04-25). It is not fetched by the app or by any script in the portfolio.
+An app that did fetch it would reject it for the missing signature.
+
+It is annotated in-file rather than deleted so the reason survives with it. If
+you want the canary changed, change the workspace copy and follow
+`Docs/Runbooks/CANARY-RUNBOOK.md` — editing this file does nothing.
+
 ## Links
 
 - [CRATE app](https://controlroomcreative.app)

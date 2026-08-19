@@ -1,16 +1,29 @@
 name: Validate Manifest
 
+# No `paths:` filter. The filter used to be `paths: ['manifest.json']`, which
+# meant the repo accumulated exactly ONE CI run on main in its entire history
+# (2026-04-25, commit 220eeac) while main moved twice — cf82bd2 and the #1
+# merge 61e35e6 both landed with no validation at all. A filter that skips a
+# job also reports nothing, so "no red checks" said nothing about the repo.
+#
+# The job is three short python3 steps on ubuntu-latest; there is no cost
+# argument for filtering it. Every PR is validated, and every commit that
+# reaches main is validated, so a green check now means the tree was actually
+# checked. `push` is scoped to main only so feature branches are not validated
+# twice (once by push, once by pull_request).
 on:
   push:
-    paths: ['manifest.json']
+    branches: [main]
   pull_request:
-    paths: ['manifest.json']
+
+permissions:
+  contents: read
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Validate JSON syntax
         run: python3 -c "import json; json.load(open('manifest.json'))"
