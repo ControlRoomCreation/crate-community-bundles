@@ -63,15 +63,28 @@ jobs:
           print(f"Manifest valid: {len(manifest['bundles'])} bundle(s)")
           EOF
 
+      # This step used to swallow every exception: it printed "FAIL <id>" and
+      # then carried on, so the job went green while its own output said the
+      # download was broken. The stated reason was that a URL "might be behind
+      # auth or rate-limited" — but these URLs are exactly the ones the app
+      # fetches unauthenticated (App/Constants+Community.swift), so a URL that
+      # needs auth IS the defect, not a false positive. A check that cannot go
+      # red is not a check.
+      #
+      # Caveat for whoever hits the first red: HEAD is not universally served,
+      # and some CDNs answer it with 405 where GET would be 200. If that turns
+      # out to be a real host rather than a real breakage, retry with GET —
+      # do not go back to ignoring the result.
       - name: Check download URLs are reachable
         if: github.event_name == 'pull_request'
         run: |
           python3 << 'EOF'
-          import json, urllib.request
+          import json, sys, urllib.request
 
           with open('manifest.json') as f:
               manifest = json.load(f)
 
+          failures = []
           for bundle in manifest['bundles']:
               url = bundle['downloadURL']
               try:
@@ -80,5 +93,12 @@ jobs:
                   print(f"  OK  {bundle['id']} -> {resp.status}")
               except Exception as e:
                   print(f"  FAIL {bundle['id']} -> {e}")
-                  # Don't fail the build — URL might be behind auth or rate-limited
+                  failures.append(bundle['id'])
+
+          # Every URL is reported before the step exits, so one broken bundle
+          # does not hide the state of the others.
+          if failures:
+              sys.exit(f"{len(failures)} unreachable downloadURL(s): {', '.join(failures)}")
+
+          print(f"All {len(manifest['bundles'])} downloadURL(s) reachable")
           EOF
